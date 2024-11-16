@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
+import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
+import { dark, light } from '@clerk/themes';
 
 const routes = [
   {
@@ -67,9 +69,22 @@ export default function Header() {
         ))}
       </nav>
       <div className='flex gap-2'>
-        <Link href='/sign-in'>
-          <Button variant='outline'>Sign in</Button>
-        </Link>
+        <SignedIn>
+          <UserButton
+            appearance={{
+              baseTheme: dark,
+            }}
+          />
+        </SignedIn>
+        <SignedOut>
+          <Link href='/sign-in'>
+            <Button variant='outline'>
+              Sign in
+              {/* <SignInButton /> */}
+            </Button>
+          </Link>
+        </SignedOut>
+
         <ModeToggle />
       </div>
     </header>
