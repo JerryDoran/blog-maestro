@@ -8,8 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
-import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
-import { dark, light } from '@clerk/themes';
+import { SignedIn, SignedOut, UserButton } from '@clerk/nextjs';
+import { dark } from '@clerk/themes';
 
 const routes = [
   {
