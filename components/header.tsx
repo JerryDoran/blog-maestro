@@ -37,10 +37,9 @@ export default function Header() {
         href='/'
         className='self-center whitespace-nowrap text-sm sm:text-xl font-semibold'
       >
-        <span className='px-2 py-1 bg-gradient-to-r from-indigo-200 via-purple-400 to-blue-500 rounded-lg'>
-          Maestro
-        </span>{' '}
-        <span className='text-sm'>Notes</span>
+        <span className='px-2 py-1 bg-gradient-to-r from-indigo-300 via-indigo-500 to-blue-600 rounded-lg'>
+          NoteMaestro
+        </span>
       </Link>
       <form>
         <div className='relative lg:flex items-center gap-2 hidden border min-w-80 rounded-lg'>
