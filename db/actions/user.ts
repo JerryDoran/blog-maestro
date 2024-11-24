@@ -2,15 +2,6 @@ import User from '../models/user.model';
 import { connectDb } from '../mongodb';
 import { EmailAddressJSON } from '@clerk/backend';
 
-// type UserProps = {
-//   id: string;
-//   first_name: string;
-//   last_name: string;
-//   image_url: string;
-//   email_addresses: EmailAddressJSON[];
-//   username: string;
-// };
-
 export async function createOrUpdateUser(
   id: string,
   first_name: string | null,
