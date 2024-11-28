@@ -1,7 +1,17 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import dynamic from 'next/dynamic';
 import { useUser } from '@clerk/nextjs';
+import {
+  getDownloadURL,
+  getStorage,
+  ref,
+  uploadBytesResumable,
+} from 'firebase/storage';
+import { app } from '@/firebase.config';
+import { CircularProgressbar } from 'react-circular-progressbar';
+import 'react-circular-progressbar/dist/styles.css';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -15,28 +25,78 @@ import {
 import { FileInput } from '@/components/file-input';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
-import { UploadCloud } from 'lucide-react';
+import { AlertCircle, UploadCloud } from 'lucide-react';
 import 'react-quill-new/dist/quill.snow.css';
 
 // https://dev.to/a7u/reactquill-with-nextjs-478b
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 
+type FormData = {
+  image?: string;
+};
+
 export default function CreateNotePage() {
   const { isSignedIn, user, isLoaded } = useUser();
   const [file, setFile] = useState<File | null>(null);
+  const [imageUploadProgress, setImageUploadProgress] = useState<
+    number | null | boolean
+  >(null);
+  const [imageUploadError, setImageUploadError] = useState<string | null>('');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [formData, setFormData] = useState<FormData>({});
   const [uploading, setUploading] = useState(false);
+
+  if (!isLoaded) return null;
 
   const handleFileSelect = (selectedFile: File) => {
     setFile(selectedFile);
   };
 
-  if (!isLoaded) return null;
+  async function handleUploadImage() {
+    try {
+      if (!file) {
+        setImageUploadError('Please select an image file');
+        return;
+      }
+      setImageUploadError(null);
+      const storage = getStorage(app);
+      const fileName = new Date().getTime() + '-' + file.name;
+      const storageRef = ref(storage, fileName);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          const progress =
+            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setImageUploadProgress(Number(progress.toFixed(0)));
+        },
+        (error) => {
+          console.log(error);
+          setImageUploadError('Image upload failed!');
+
+          setImageUploadProgress(null);
+        },
+        () => {
+          getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+            setImageUploadProgress(null);
+            setImageUploadError(null);
+            setFormData({ ...formData, image: downloadURL });
+          });
+        }
+      );
+    } catch (error) {
+      console.log(error);
+      setImageUploadError('Something went wrong!');
+
+      setImageUploadProgress(null);
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file) return;
 
-    setUploading(true);
+    // setImageUploadProgress(true);
 
     // Simulating file upload process
     try {
@@ -48,7 +108,7 @@ export default function CreateNotePage() {
       console.error('Error uploading file:', error);
       alert('Error uploading file. Please try again.');
     } finally {
-      setUploading(false);
+      setImageUploadProgress(false);
     }
   };
 
@@ -98,13 +158,43 @@ export default function CreateNotePage() {
           <FileInput onFileSelect={handleFileSelect} />
           <Button
             type='button'
+            className='bg-gradient-to-br from-indigo-400 to-indigo-700 text-white top-11 left-[310px] flex items-center justify-center absolute'
             size='icon'
-            className='bg-gradient-to-br from-indigo-400 to-indigo-700 text-white absolute top-11 left-[310px]'
-            disabled={!file || uploading}
+            disabled={
+              file === null ||
+              file === undefined ||
+              Number(imageUploadProgress) > 0
+            }
+            onClick={handleUploadImage}
           >
-            <UploadCloud className='h-4 w-4' />
+            {imageUploadProgress ? (
+              <div className='w-16 h-16'>
+                <CircularProgressbar
+                  value={Number(imageUploadProgress)}
+                  text={`${imageUploadProgress || 0}%`}
+                  className='mt-6 ml-[10px]'
+                />
+              </div>
+            ) : (
+              <UploadCloud className='size-16' />
+            )}
           </Button>
         </div>
+
+        {imageUploadError && (
+          <div className='flex items-center gap-2'>
+            <AlertCircle className='size-8 text-red-500' />
+            {imageUploadError}
+          </div>
+        )}
+        {formData?.image && (
+          <img
+            src={formData.image}
+            alt='upload'
+            className='w-full h-72 object-cover'
+          />
+        )}
+
         <ReactQuill
           theme='snow'
           placeholder='Write something...'
