@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
@@ -27,15 +28,20 @@ import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { AlertCircle, UploadCloud } from 'lucide-react';
 import 'react-quill-new/dist/quill.snow.css';
+import { useRouter } from 'next/navigation';
 
 // https://dev.to/a7u/reactquill-with-nextjs-478b
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 
 type FormData = {
   image?: string;
+  content?: string;
+  category?: any;
+  title?: string;
 };
 
 export default function CreateNotePage() {
+  const router = useRouter();
   const { isSignedIn, user, isLoaded } = useUser();
   const [file, setFile] = useState<File | null>(null);
   const [imageUploadProgress, setImageUploadProgress] = useState<
@@ -44,6 +50,7 @@ export default function CreateNotePage() {
   const [imageUploadError, setImageUploadError] = useState<string | null>('');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [formData, setFormData] = useState<FormData>({});
+  const [publishError, setPublishError] = useState('');
   const [uploading, setUploading] = useState(false);
 
   if (!isLoaded) return null;
@@ -94,21 +101,30 @@ export default function CreateNotePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) return;
-
-    // setImageUploadProgress(true);
-
-    // Simulating file upload process
     try {
-      // In a real application, you would send the file to your server or a file storage service here
-      await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulating network request
-      console.log('File uploaded successfully:', file.name);
-      alert('File uploaded successfully!');
+      const response = await fetch('/api/note/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          userMongoId: user?.publicMetadata.userMongoId,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setPublishError(data.message);
+        console.log(publishError);
+        return;
+      }
+      if (response.ok) {
+        setPublishError('');
+        router.push(`/note/${data.slug}`);
+      }
     } catch (error) {
-      console.error('Error uploading file:', error);
-      alert('Error uploading file. Please try again.');
-    } finally {
-      setImageUploadProgress(false);
+      console.log(error);
+      setPublishError('Something went wrong!');
     }
   };
 
@@ -122,6 +138,8 @@ export default function CreateNotePage() {
   //   );
   // }
 
+  console.log(formData);
+
   return isSignedIn && user?.publicMetadata.isAdmin ? (
     <div className='p-3 max-w-4xl mx-auto min-h-screen'>
       <h1 className='text-center text-3xl my-7 font-semibold'>Create a note</h1>
@@ -133,8 +151,15 @@ export default function CreateNotePage() {
             required
             id='title'
             className='flex-1'
+            onChange={(e: any) =>
+              setFormData({ ...formData, title: e.target.value })
+            }
           />
-          <Select>
+          <Select
+            onValueChange={(value) =>
+              setFormData({ ...formData, category: value })
+            }
+          >
             <SelectTrigger className='w-[200px]'>
               <SelectValue placeholder='Select a category' />
             </SelectTrigger>
@@ -199,6 +224,9 @@ export default function CreateNotePage() {
           theme='snow'
           placeholder='Write something...'
           className='h-72 mb-12'
+          onChange={(value) => {
+            setFormData({ ...formData, content: value });
+          }}
         />
         <Button
           type='submit'
