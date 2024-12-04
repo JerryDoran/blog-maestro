@@ -17,7 +17,7 @@ const routes = [
     link: '/',
   },
   {
-    label: 'notes',
+    label: 'posts',
     link: '/notes',
   },
 ];
